@@ -1,18 +1,18 @@
-#define LED_PIN 48
-#define SDA_PIN GPIO_NUM_11
-#define SCL_PIN GPIO_NUM_12
-
+#include <Arduino.h>
+#include <DFRobot_DHT20.h>
 #include <WiFi.h>
 #include <Arduino_MQTT_Client.h>
 #include <ThingsBoard.h>
-#include "DHT20.h"
-#include "Wire.h"
 #include <ArduinoOTA.h>
+#include <RPC_Callback.h>
+#include <RPC_Response.h>
 
-constexpr char WIFI_SSID[] = "abcd";
-constexpr char WIFI_PASSWORD[] = "123456789";
+#define LED_PIN    18
 
-constexpr char TOKEN[] = "7s5pokn2se622pzn1jxu";
+constexpr char WIFI_SSID[] = "oddnimatronics";
+constexpr char WIFI_PASSWORD[] = "sieucapvipproso1thegioi";
+
+constexpr char TOKEN[] = "l63uplkf9gvd3cw66sjg";
 
 constexpr char THINGSBOARD_SERVER[] = "app.coreiot.io";
 constexpr uint16_t THINGSBOARD_PORT = 1883U;
@@ -45,8 +45,6 @@ constexpr std::array<const char *, 2U> SHARED_ATTRIBUTES_LIST = {
 WiFiClient wifiClient;
 Arduino_MQTT_Client mqttClient(wifiClient);
 ThingsBoard tb(mqttClient, MAX_MESSAGE_SIZE);
-
-DHT20 dht20;
 
 RPC_Response setLedSwitchState(const RPC_Data &data) {
     Serial.println("Received Switch state");
@@ -107,20 +105,21 @@ const bool reconnect() {
   return true;
 }
 
+DFRobot_DHT20 dht20;
+
 void setup() {
-  Serial.begin(SERIAL_DEBUG_BAUD);
+  Serial.begin(115200); // Or try Serial, Serial0, Serial1 if Serial2 fails
   pinMode(LED_PIN, OUTPUT);
+  dht20.begin() ;
   delay(1000);
   InitWiFi();
-
-  Wire.begin(SDA_PIN, SCL_PIN);
-  dht20.begin();
-  
+  Serial.println("Serial Test - Hello!");
 }
 
 void loop() {
-  delay(10);
-
+  digitalWrite (LED_PIN, HIGH);
+  delay(5000);
+  digitalWrite (LED_PIN, LOW);
   if (!reconnect()) {
     return;
   }
@@ -160,18 +159,8 @@ void loop() {
     attributesChanged = false;
     tb.sendAttributeData(LED_STATE_ATTR, digitalRead(LED_PIN));
   }
-
-  // if (ledMode == 1 && millis() - previousStateChange > blinkingInterval) {
-  //   previousStateChange = millis();
-  //   digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-  //   Serial.print("LED state changed to: ");
-  //   Serial.println(!digitalRead(LED_PIN));
-  // }
-
   if (millis() - previousDataSend > telemetrySendInterval) {
     previousDataSend = millis();
-
-    dht20.read();
     
     float temperature = dht20.getTemperature();
     float humidity = dht20.getHumidity();
@@ -197,4 +186,6 @@ void loop() {
   }
 
   tb.loop();
+
+  delay(2000);
 }
